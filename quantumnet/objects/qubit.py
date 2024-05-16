@@ -3,7 +3,7 @@ class Qubit():
         self.qubit_id = qubit_id
         self._qubit_state = None
         self._initial_fidelity = initial_fidelity
-        self._current_fidelity = None
+        self._current_fidelity = initial_fidelity
 
     def __str__(self):
         return f"Qubit {self.qubit_id} with state {self._qubit_state}"
