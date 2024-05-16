@@ -1,6 +1,7 @@
 import networkx as nx
-from ..objects import Logger
+from ..objects import Logger, Qubit
 from ..components import Host
+from .layers import *
 
 class Network():
     """
@@ -13,9 +14,16 @@ class Network():
         self._topology = None
         self._hosts = {}
         self._controller = None
+        # Camadas
+        self._application = ApplicationLayer()
+        self._transport = TransportLayer()
+        self._network = NetworkLayer()
+        self._link = LinkLayer()
+        self._physical = PhysicalLayer()
         # Sobre a execução
         self.logger = Logger.get_instance()
-        
+        self.count_qubit = 0
+
     @property
     def hosts(self):
         """
@@ -132,3 +140,22 @@ class Network():
         # Cria os hosts e adiciona ao dicionário de hosts
         for node in self._graph.nodes():
             self._hosts[node] = Host(node)
+
+    def add_qubit(self, host_id: int, qubit_id: int, initial_fidelity: float = 1.0):
+        """
+        Cria um qubit e adiciona à memória do host especificado.
+
+        Args:
+            host_id (int): ID do host onde o qubit será criado.
+            qubit_id (int): ID do qubit a ser criado.
+            initial_fidelity (float): Fidelidade inicial do qubit.
+
+        Raises:
+            Exception: Se o host especificado não existir na rede.
+        """
+        if host_id not in self._hosts:
+            raise Exception(f'Host {host_id} não existe na rede.')
+
+        qubit = Qubit(qubit_id, initial_fidelity)
+        self._hosts[host_id].add_qubit(qubit)
+        self.logger.debug(f'Qubit {qubit_id} criado com fidelidade inicial {initial_fidelity} e adicionado à memória do Host {host_id}.')
