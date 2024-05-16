@@ -1,5 +1,6 @@
 
-from ..objects import Logger
+from ..objects import Logger, Qubit
+
 class Host():
     def __init__(self, host_id: int, probability_on_demand_qubit_create: float = 0.5, probability_replay_qubit_create: float = 0.5, max_qubits_create: int = 10, memory_size: int = 10) -> None:
         # Sobre a rede
@@ -59,4 +60,15 @@ class Host():
             raise Exception('O valor fornecido para host_id_for_connection deve ser um inteiro.')
         
         if host_id_for_connection not in self.connections:
-            self.connections.append(host_id_for_connection)
+            self.connections.append(host_id_for_connection),
+
+    def add_qubit(self, qubit: Qubit):
+        """
+        Adiciona um qubit à memória do host.
+
+        Args:
+            qubit (Qubit): O qubit a ser adicionado.
+        """
+        self.memory.append(qubit)
+        Logger.get_instance().debug(f'Qubit {qubit.qubit_id} adicionado à memória do Host {self.host_id}.')
+
