@@ -1,4 +1,5 @@
 from ...objects import Logger, Qubit
+
 class PhysicalLayer():
     def __init__(self, physical_layer_id: int):
         """
