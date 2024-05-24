@@ -48,6 +48,17 @@ class Host():
         """
         return self._memory
     
+    def get_last_qubit(self):
+        """
+        Retorna o último qubit da memória.
+
+        Returns:
+            Qubit : Último qubit da memória.
+        """
+        q = self.memory[-1]
+        self.memory.remove(q)
+        return q
+    
     def add_connection(self, host_id_for_connection: int):
         """
         Adiciona uma conexão ao host. Uma conexão é um host_id, um número inteiro.

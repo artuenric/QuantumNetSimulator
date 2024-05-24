@@ -64,6 +64,17 @@ class Network():
         """
         return self._graph.edges()
     
+    # Camadas
+    @property
+    def physical(self):
+        """
+        Camada física da rede.
+
+        Returns:
+            PhysicalLayer : Camada física da rede.
+        """
+        return self._physical
+    
     def draw(self):
         """
         Desenha a rede.
@@ -141,6 +152,11 @@ class Network():
         for node in self._graph.nodes():
             self._hosts[node] = Host(node)
 
+    def start_hosts_and_channels(self, num_qubits: int = 10, prob_echp_on_demand: float = 1.0, prob_echp_on_replay: float = 1.0):
+        # Adicionar qubits aos hosts
+        # Adicionar propriedade dos canais
+        pass
+    
     def add_qubit(self, host_id: int, qubit_id: int, initial_fidelity: float = 1.0):
         """
         Cria um qubit e adiciona à memória do host especificado.
