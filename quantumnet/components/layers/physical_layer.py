@@ -1,17 +1,19 @@
-from ...objects import Logger, Qubit
+from ...objects import Logger, Qubit, Epr
+from ...components import Host
+from random import randrange
 
 class PhysicalLayer():
-    def __init__(self, physical_layer_id: int):
+    def __init__(self, physical_layer_id: int = 0):
         """
         Inicializa a camada física.
         
         args:
             physical_layer_id : int : Id da camada física.
         """
-        
+    
         self._physical_layer_id = physical_layer_id
         self._qubits = []
-        self.logger = Logger()
+        self.logger = Logger.get_instance()
         
     def __str__(self):
         """ Retorna a representação em string da camada física. 
@@ -19,6 +21,7 @@ class PhysicalLayer():
         returns:
             str : Representação em string da camada física."""
         return f'Physical Layer {self.physical_layer_id}'
+    
     def entangle(self, qubit1: Qubit, qubit2: Qubit):
         """
         Entrelaça dois qubits.
@@ -27,10 +30,8 @@ class PhysicalLayer():
             qubit1 : Qubit : Qubit 1.
             qubit2 : Qubit : Qubit 2.
         """
-        
-        qubit1.entangle(qubit2)
-        self.qubits.append(qubit1)
-        self.qubits.append(qubit2)
+        return Epr([qubit1, qubit2])
+    
     @property
     def physical_layer_id(self):
         """
@@ -39,7 +40,6 @@ class PhysicalLayer():
         returns:
             int : Id da camada física.
         """
-        
         return self._physical_layer_id
     
     @property
@@ -50,42 +50,55 @@ class PhysicalLayer():
         returns:
             list : Lista de qubits da camada física.
         """
-        
         return self._qubits
-    
-    def epr_pair(self):
+
+    def create_epr_pair(self, qubit1: Qubit, qubit2: Qubit):
         """
         Cria um par de qubits entrelaçados.
         
         returns:
             Qubit, Qubit : Par de qubits entrelaçados.
         """
-        qubit1 = Qubit()
-        qubit2 = Qubit()
-        qubit1.entangle(qubit2)
-        self.qubits.append(qubit1)
-        self.qubits.append(qubit2)
-        return qubit1, qubit2
+        epr = self.entangle(qubit1, qubit2)
+        # Adicionar esse EPR em algum lugar
+        return epr
     
     def fidelity_measurement(self, qubit1: Qubit, qubit2: Qubit):
+        """
+        Mede a fidelidade entre dois qubits.
+
+        Args:
+            qubit1 (Qubit): Qubit 1.
+            qubit2 (Qubit): Qubit 2.
+
+        Returns:
+            float: Fidelidade entre os qubits.
+        """
         fidelity = qubit1.fidelity(qubit2)
         self.logger.log(f'A fidelidade entre o qubit {qubit1} e o qubit {qubit2} é {fidelity}')
         return fidelity
     
-    
-    def Entanglement_Creation_Heralding_Protocol(self):
-        """ Protocolo de criação de emaranhamento com sinalização.
-        
+    def Entanglement_Creation_Heralding_Protocol(self, alice: Host, bob: Host):
+        """ 
+        Protocolo de criação de emaranhamento com sinalização.
         
         returns:
-            bool : True se o protocolo foi bem sucedido, False caso contrário."""
-        qubit1, qubit2 = self.epr_pair()
+            bool : True se o protocolo foi bem sucedido, False caso contrário.
+        """
+        # Alice e Bob criam um par EPR
+        qubit1 = alice.get_last_qubit()
+        qubit2 = bob.get_last_qubit()
+        self.create_epr_pair(qubit1, qubit2)
+    
+        # Checa a fidelidade
         fidelity = self.fidelity_measurement(qubit1, qubit2)
+        
+        # Adicionar par EPR no canal
+        
+        # Pode dar errado tanto pela probabilidade, quanto pela fidelidade
         if fidelity > 0.9:
             self.logger.log('O protocolo de criação de emaranhamento foi bem sucedido.')
+            # Adicionar par EPR no canal
             return True
-        else:
-            self.logger.log('O protocolo de criação de emaranhamento falhou.')
-            return False
-        
-    pass
+        self.logger.log('O protocolo de criação de emaranhamento falhou.')
+        return False
