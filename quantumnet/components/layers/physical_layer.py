@@ -62,8 +62,7 @@ class PhysicalLayer():
         epr = self.entangle(qubit1, qubit2)
         # Adicionar esse EPR em algum lugar
         return epr
-    
-    
+      
     def fidelity_measurement_only_one(self, qubit: Qubit):
         """
         Mede a fidelidade de um qubit.
@@ -94,6 +93,7 @@ class PhysicalLayer():
         return fidelity
     
     def entanglement_creation_heralding_protocol(self, alice: Host, bob: Host):
+
         """ 
         Protocolo de criação de emaranhamento com sinalização.
         
@@ -104,7 +104,6 @@ class PhysicalLayer():
         qubit1 = alice.get_last_qubit()
         qubit2 = bob.get_last_qubit()
         self.create_epr_pair(qubit1, qubit2)
-
         # Checa a fidelidade
         fidelity = self.fidelity_measurement(qubit1, qubit2)
         
@@ -134,6 +133,3 @@ class PhysicalLayer():
 
     def echp_on_replay(self, alice: Host, bob: Host):
         #o ECHP_on_replay é quando a fidelidade decaiu e o protocolo é refeito
-        
-    
-    
