@@ -55,6 +55,7 @@ class Host():
         Returns:
             Qubit : Último qubit da memória.
         """
+        # TODO: Try except ou não sei
         q = self.memory[-1]
         self.memory.remove(q)
         return q
