@@ -10,16 +10,14 @@ class Network():
     def __init__(self) -> None:
         # Sobre a rede
         self._graph = nx.Graph()
-        self._channels = None
         self._topology = None
         self._hosts = {}
-        self._controller = None
         # Camadas
         self._application = ApplicationLayer()
         self._transport = TransportLayer()
         self._network = NetworkLayer()
         self._link = LinkLayer()
-        self._physical = PhysicalLayer()
+        self._physical = PhysicalLayer(self)
         # Sobre a execução
         self.logger = Logger.get_instance()
         self.count_qubit = 0
@@ -152,26 +150,14 @@ class Network():
         for node in self._graph.nodes():
             self._hosts[node] = Host(node)
 
-    def start_hosts_and_channels(self, num_qubits: int = 10, prob_echp_on_demand: float = 1.0, prob_echp_on_replay: float = 1.0):
-        # Adicionar qubits aos hosts
-        # Adicionar propriedade dos canais
-        pass
-    
-    def add_qubit(self, host_id: int, qubit_id: int, initial_fidelity: float = 1.0):
-        """
-        Cria um qubit e adiciona à memória do host especificado.
-
-        Args:
-            host_id (int): ID do host onde o qubit será criado.
-            qubit_id (int): ID do qubit a ser criado.
-            initial_fidelity (float): Fidelidade inicial do qubit.
-
-        Raises:
-            Exception: Se o host especificado não existir na rede.
-        """
-        if host_id not in self._hosts:
-            raise Exception(f'Host {host_id} não existe na rede.')
-
-        qubit = Qubit(qubit_id, initial_fidelity)
-        self._hosts[host_id].add_qubit(qubit)
-        self.logger.debug(f'Qubit {qubit_id} criado com fidelidade inicial {initial_fidelity} e adicionado à memória do Host {host_id}.')
+    def start_hosts_and_channels(self, num_qubits: int = 10, prob_on_demand_epr_create: float = 1.0, prob_replay_epr_create: float = 1.0):      
+        # Adiciona qubits aos hosts
+        for host_id in self._hosts:
+            for i in range(num_qubits):
+                self.physical.create_qubit(host_id)
+        # Adiciona propriedade dos canais
+        # TODO: As propriedades das arestas devem ser valores aleatórios, mudar os parâmetros se for preciso. Usar random.
+        for edge in self.edges:
+            self._graph.edges[edge]['prob_on_demand_epr_create'] = prob_on_demand_epr_create
+            self._graph.edges[edge]['prob_replay_epr_create'] = prob_replay_epr_create
+            self._graph.edges[edge]['eprs'] = list()
