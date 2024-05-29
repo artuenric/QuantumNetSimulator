@@ -164,7 +164,7 @@ class Network():
         for node in self._graph.nodes():
             self._hosts[node] = Host(node)
 
-    def start_hosts_and_channels(self, num_qubits: int = 10, prob_on_demand_epr_create: float = random.uniform(0,1), prob_replay_epr_create: float = random.uniform(0,1)):  
+    def start_hosts_and_channels(self, num_qubits: int = 10, prob_on_demand_epr_create: float = 1, prob_replay_epr_create: float = 1):  
         """
         Inicializa os hosts e os canais da rede.
         
