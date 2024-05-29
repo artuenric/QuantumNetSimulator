@@ -147,8 +147,6 @@ class PhysicalLayer():
         # Checa a fidelidade
         fidelity = self.fidelity_measurement(qubit1, qubit2)
         
-        # Adicionar par EPR no canal
-        
         # Pode dar errado tanto pela probabilidade, quanto pela fidelidade
         if fidelity > 0.9:
             self.logger.log('O protocolo de criação de emaranhamento foi bem sucedido.')
@@ -156,3 +154,70 @@ class PhysicalLayer():
             return True
         self.logger.log('O protocolo de criação de emaranhamento falhou.')
         return False
+
+    def echp_on_demand(self, alice_host_id: int, bob_host_id: int):
+        """
+        Protocolo para a recriação de um entrelaçamento entre os qubits de acordo com a probabilidade de sucesso de demanda do par EPR criado
+            
+        Args: 
+            alice_host_id (int) : ID do Host de Alice
+            bob_host_id  (int) : ID do Host de Bob
+            
+        Returns:
+            bool : True se o protocolo foi bem sucedido, False caso contrário.
+        """
+        # Obtendo os qubits de Alice e Bob
+        qubit1 = self._network.hosts[alice_host_id].get_last_qubit()
+        qubit2 = self._network.hosts[bob_host_id].get_last_qubit()
+            
+        # Acessando a fidelidade dos qubits
+        fidelity_qubit1 = self.fidelity_measurement_only_one(qubit1)
+        fidelity_qubit2 = self.fidelity_measurement_only_one(qubit2)
+                
+        # Probabilidade de Sucesso do ECHP: Prob_demand_epr_create * Fidelidade_qubit1 * Fidelidade_qubit2
+        prob_on_demand_epr_create = self._network.edges[alice_host_id, bob_host_id]['prob_on_demand_epr_create']
+        echp_success_probability = prob_on_demand_epr_create * fidelity_qubit1 * fidelity_qubit2
+            
+        if uniform(0, 1) < echp_success_probability:
+            epr = self.create_epr_pair(qubit1, qubit2)
+            self._network.edges[alice_host_id, bob_host_id]['eprs'].append(epr)
+            self.logger.log(f'A probabilidade de sucesso do ECHP é {echp_success_probability}')
+            return True
+        self.logger.log('A probabilidade de sucesso do ECHP falhou.')
+        return False
+
+    
+    def echp_on_replay(self, alice_host_id: int, bob_host_id: int):
+
+        """ 
+        Protocolo para a recriação de um entrelaçamento entre os qubits de que já estavam perdendo suas caracteristicas.
+        
+        Args: 
+            alice_host_id (int) : ID do Host de Alice
+            bob_host_id  (int) : ID do Host de Bob
+        
+        Returns:
+            bool : True se o protocolo foi bem sucedido, False caso contrário.
+
+        """
+
+        # Obtendo os qubits de Alice e Bob
+        qubit1 = self._network.hosts[alice_host_id].get_last_qubit()
+        qubit2 = self._network.hosts[bob_host_id].get_last_qubit()
+        
+        # Acessando a fidelidade dos qubits
+        fidelity_qubit1 = self.fidelity_measurement_only_one(qubit1)
+        fidelity_qubit2 = self.fidelity_measurement_only_one(qubit2)
+               
+        # Proabilidade de Sucesso do ECHP: Prob_replay_epr_create * Fidelidade_qubit1* Fidelidade_qubit2
+        prob_replay_epr_create = self._network.edges[alice_host_id, bob_host_id]['prob_replay_epr_create']
+        echp_success_probability = prob_replay_epr_create * fidelity_qubit1 * fidelity_qubit2
+        
+        if uniform(0, 1) < echp_success_probability:
+            epr = self.create_epr_pair(qubit1, qubit2)
+            self._network.edges[alice_host_id, bob_host_id]['eprs'].append(epr)
+            self.logger.log(f'A probabilidade de sucesso do ECHP é {echp_success_probability}')
+            return True
+        self.logger.log('A probabilidade de sucesso do ECHP falhou.')
+        return False
+

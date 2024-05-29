@@ -116,6 +116,19 @@ class Network():
             Host : O host com o host_id fornecido.
         """
         return self._hosts[host_id]
+
+    def get_eprs(self):
+        """
+        Cria uma lista de qubits entrelaçados (EPRs) associadas a cada aresta do grafo.
+
+        Returns:
+            Um dicionários que armazena as chaves que são as arestas do grafo e os valores são as
+              listas de qubits entrelaçados (EPRs) associadas a cada aresta. 
+        """
+        eprs = {}
+        for edge in self.edges:
+            eprs[edge] = self._graph.edges[edge]['eprs']
+        return eprs
        
     def set_ready_topology(self, topology_name: str, *args: int) -> str:
         """
