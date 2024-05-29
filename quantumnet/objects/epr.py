@@ -1,8 +1,10 @@
 class Epr():
     def __init__(self,  epr_id: int, qubits: list, initial_fidelity: float = 1.0) -> None:
+        # TODO: Tratamento de erro para o garantir que é uma lista de DOIS QUBITS
         self._epr_id = epr_id
         self._initial_fidelity = initial_fidelity
         self._current_fidelity = initial_fidelity
+        
         # Ainda vamos ver se isso vai ser necessário
         # self.qubits = qubits
 

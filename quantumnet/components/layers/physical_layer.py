@@ -65,8 +65,14 @@ class PhysicalLayer():
         self._count_qubit += 1
         self.logger.debug(f'Qubit {qubit_id} criado com fidelidade inicial {self._initial_qubits_fidelity} e adicionado à memória do Host {host_id}.')
     
-    #Possível função genérica para entrelaçar inúmeros qubits. GHZ, W, etc.
-    def entangle_n_qubits(self, qubits: list):
+    def entangle(self, qubits: list):
+        # TODO: Possível função genérica para entrelaçar inúmeros qubits. GHZ, W, etc.
+        """
+        Entrelaça n qubits.
+        
+        args:
+            qubits: list : Lista de qubits a serem entrelaçados.
+        """
         pass
     
     def create_epr_pair(self, qubit1: Qubit, qubit2: Qubit):
@@ -76,16 +82,11 @@ class PhysicalLayer():
         returns:
             Qubit, Qubit : Par de qubits entrelaçados.
         """
+        fidelidade_qubit1 = self.fidelity_measurement_only_one(qubit1)
+        fidelidade_qubit2 = self.fidelity_measurement_only_one(qubit2)
+        fidelidade_inicial_epr = fidelidade_qubit1 * fidelidade_qubit2
+        epr = Epr([qubit1, qubit2], fidelidade_inicial_epr)
         
-        # Verifica se os parâmetros são instâncias da classe Qubit
-        if not isinstance(qubit1, Qubit) or not isinstance(qubit2, Qubit):
-            raise ValueError("Os parâmetros devem ser instâncias da classe Qubit.")
-        
-        # Mede a fidelidade dos qubits e calcula a fidelidade inicial do par EPR
-        qubit1_fidelity = self.fidelity_measurement_only_one(qubit1)
-        qubit2_fidelity = self.fidelity_measurement_only_one(qubit2)
-        epr_inicial_fidelity = qubit1_fidelity * qubit2_fidelity
-        epr = Epr([qubit1, qubit2], epr_inicial_fidelity)
         return epr
       
     def fidelity_measurement_only_one(self, qubit: Qubit):
@@ -143,37 +144,29 @@ class PhysicalLayer():
         return False
     
     def echp_on_replay(self, alice_host_id: int, bob_host_id: int):
-        """
-        Protocolo ECHP_on_replay (Entanglement Creation Heralding Protocol on replay)
-        
-        
-        returns:
-            bool : True se o protocolo foi bem sucedido, False caso contrário.
-    
-        """
+        # TODO: Fazer a docsctring
+        # TODO: Adicionar log de sucesso ou falha
         
         # Obtendo os qubits de Alice e Bob
         qubit1 = self._network.hosts[alice_host_id].get_last_qubit()
         qubit2 = self._network.hosts[bob_host_id].get_last_qubit()
         
         # Acessando a fidelidade dos qubits
-        qubit1_fidelity = self.fidelity_measurement_only_one(qubit1)
-        qubit2_fidelity = self.fidelity_measurement_only_one(qubit2)
+        fidelidade_qubit1 = self.fidelity_measurement_only_one(qubit1)
+        fidelidade_qubit2 = self.fidelity_measurement_only_one(qubit2)
                
-        # Proabilidade de Sucesso do ECHP: Prob_replay_epr_create * qubit1_fidelity* qubit2_fidelity
+        # Proabilidade de Sucesso do ECHP: Prob_replay_epr_create * Fidelidade_qubit1* Fidelidade_qubit2
         prob_replay_epr_create = self._network.edges[alice_host_id, bob_host_id]['prob_replay_epr_create']
-        echp_success_probability = prob_replay_epr_create * qubit1_fidelity * qubit2_fidelity
+        proabilidade_de_sucesso_do_echp = prob_replay_epr_create * fidelidade_qubit1 * fidelidade_qubit2
         
-        # Se a probabilidade de sucesso for maior que um número aleatório, o protocolo é bem sucedido
-        if uniform(0, 1) < echp_success_probability:
+        if uniform(0, 1) < proabilidade_de_sucesso_do_echp:
             epr = self.create_epr_pair(qubit1, qubit2)
             self._network.edges[alice_host_id, bob_host_id]['eprs'].append(epr)
-            self.logger.log(f'A probabilidade de sucesso do ECHP é {echp_success_probability}')
-            self.logger.log('O protocolo ECHP_on_replay foi bem sucedido.')
+            self.logger.log(f'A probabilidade de sucesso do ECHP é {proabilidade_de_sucesso_do_echp}')
             return True
-        self.logger.log('O protocolo ECHP_on_replay falhou.')
+        
         return False
 
-    def echp_on_demand(self, alice: Host, bob: Host):
+    def echp_on_replay(self, alice: Host, bob: Host):
         #o ECHP_on_replay é quando a fidelidade decaiu e o protocolo é refeito
         pass

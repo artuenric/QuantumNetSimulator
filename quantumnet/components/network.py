@@ -2,7 +2,6 @@ import networkx as nx
 from ..objects import Logger, Qubit
 from ..components import Host
 from .layers import *
-import random
 
 class Network():
     """
@@ -151,19 +150,13 @@ class Network():
         for node in self._graph.nodes():
             self._hosts[node] = Host(node)
 
-    def start_hosts_and_channels(self, num_qubits: int = 10, prob_on_demand_epr_create: float = random.uniform(0,1), prob_replay_epr_create: float = random.uniform(0,1)):  
-        """
-        Inicializa os hosts e os canais da rede.
-        
-        returns:
-            int : Número de qubits inicializados.
-        """
-        
+    def start_hosts_and_channels(self, num_qubits: int = 10, prob_on_demand_epr_create: float = 1.0, prob_replay_epr_create: float = 1.0):      
         # Adiciona qubits aos hosts
         for host_id in self._hosts:
             for i in range(num_qubits):
                 self.physical.create_qubit(host_id)
         # Adiciona propriedade dos canais
+        # TODO: As propriedades das arestas devem ser valores aleatórios, mudar os parâmetros se for preciso. Usar random.
         for edge in self.edges:
             self._graph.edges[edge]['prob_on_demand_epr_create'] = prob_on_demand_epr_create
             self._graph.edges[edge]['prob_replay_epr_create'] = prob_replay_epr_create
