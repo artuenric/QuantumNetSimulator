@@ -4,6 +4,7 @@ from ..components import Host
 from .layers import *
 import random
 
+
 class Network():
     """
     Um objeto para utilizar como rede.
@@ -17,11 +18,14 @@ class Network():
         self._application = ApplicationLayer()
         self._transport = TransportLayer()
         self._network = NetworkLayer()
-        self._link = LinkLayer()
         self._physical = PhysicalLayer(self)
+        self._link = LinkLayer(self, self._physical)
         # Sobre a execução
         self.logger = Logger.get_instance()
         self.count_qubit = 0
+        #minimo e maximo
+        self.max_prob = 1
+        self.min_prob = 0.2
 
     @property
     def hosts(self):
@@ -73,6 +77,16 @@ class Network():
             PhysicalLayer : Camada física da rede.
         """
         return self._physical
+    
+    @property
+    def linklayer(self):
+        """
+        Camada de enlace da rede.
+
+        Returns:
+            LinkLayer : Camada de enlace da rede.
+        """
+        return self._link
     
     def draw(self):
         """
@@ -129,7 +143,34 @@ class Network():
         for edge in self.edges:
             eprs[edge] = self._graph.edges[edge]['eprs']
         return eprs
-       
+    
+    def get_eprs_from_edge(self, alice: int, bob: int) -> list:
+        """
+        Retorna os EPRs de uma aresta específica.
+
+        Args:
+            alice (int): ID do host Alice.
+            bob (int): ID do host Bob.
+        Returns:
+            list : Lista de EPRs da aresta.
+        """
+        edge = (alice, bob)
+        return self._graph.edges[edge]['eprs']
+    
+    def remove_epr(self, alice: int, bob: int) -> list:
+        """
+        Remove um EPR de um canal.
+
+        Args:
+            channel (tuple): Canal de comunicação.
+        """
+        channel = (alice, bob)
+        try:
+            epr = self._graph.edges[channel]['eprs'].pop(-1)   
+            return epr
+        except IndexError:
+            raise Exception('Não há Pares EPRs.')   
+        
     def set_ready_topology(self, topology_name: str, *args: int) -> str:
         """
         Cria um grafo com uma das topologias prontas para serem utilizadas. 
@@ -163,21 +204,44 @@ class Network():
         # Cria os hosts e adiciona ao dicionário de hosts
         for node in self._graph.nodes():
             self._hosts[node] = Host(node)
-
-    def start_hosts_and_channels(self, num_qubits: int = 10, prob_on_demand_epr_create: float = 1, prob_replay_epr_create: float = 1):  
+        self.start_hosts()
+        self.start_channels()
+    
+    
+    def start_hosts(self, num_qubits: int = 20):
         """
-        Inicializa os hosts e os canais da rede.
+        Inicializa os hosts da rede.
         
-        returns:
-            int : Número de qubits inicializados.
+        Args:
+            num_qubits (int): Número de qubits a serem inicializados.
         """
-        
-        # Adiciona qubits aos hosts
         for host_id in self._hosts:
             for i in range(num_qubits):
                 self.physical.create_qubit(host_id)
-        # Adiciona propriedade dos canais
+        print("Hosts inicializados")    
+
+
+    def start_channels(self):
+        """
+        Inicializa os canais da rede.
+        
+        Args:
+            prob_on_demand_epr_create (float): Probabilidade de criar um EPR sob demanda.
+            prob_replay_epr_create (float): Probabilidade de criar um EPR de replay.
+        """
         for edge in self.edges:
-            self._graph.edges[edge]['prob_on_demand_epr_create'] = prob_on_demand_epr_create
-            self._graph.edges[edge]['prob_replay_epr_create'] = prob_replay_epr_create
+            self._graph.edges[edge]['prob_on_demand_epr_create'] = random.uniform(self.min_prob, self.max_prob)
+            self._graph.edges[edge]['prob_replay_epr_create'] = random.uniform(self.min_prob, self.max_prob)
             self._graph.edges[edge]['eprs'] = list()
+        print("Canais inicializados")
+        
+
+                
+
+        
+        
+        
+        
+        
+        
+        
