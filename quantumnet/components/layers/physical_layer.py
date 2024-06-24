@@ -1,6 +1,7 @@
 from ...objects import Logger, Qubit, Epr
-from ...components import Host #, Network
+from ...components import Host
 from random import uniform
+import random
 
 class PhysicalLayer():
     def __init__(self, network, physical_layer_id: int = 0):
@@ -10,12 +11,15 @@ class PhysicalLayer():
         args:
             physical_layer_id : int : Id da camada física.
         """
-
+        self.max_prob = 1
+        self.min_prob = 0.2
         self._physical_layer_id = physical_layer_id
         self._network = network
         self._qubits = []
-        self._initial_qubits_fidelity = 1.0
+        self._failed_eprs = []
+        self._initial_qubits_fidelity = random.uniform(self.min_prob, self.max_prob)
         self._count_qubit = 0
+        self._count_epr = 0
         self.logger = Logger.get_instance()
         
     def __str__(self):
@@ -44,7 +48,37 @@ class PhysicalLayer():
             list : Lista de qubits da camada física.
         """
         return self._qubits
+    
+    @property
+    def failed_eprs(self):
+        """
+        Retorna os pares EPR que falharam.
+        
+        returns:
+            dict : Dicionário de pares EPR que falharam.
+        """
+        return self._failed_eprs
+    
+    # def create_qubit(self, host_id: int):
+    #     """
+    #     Cria um qubit e adiciona à memória do host especificado.
 
+    #     Args:
+    #         host_id (int): ID do host onde o qubit será criado.
+
+    #     Raises:
+    #         Exception: Se o host especificado não existir na rede.
+    #     """
+    #     if host_id not in self._network.hosts:
+    #         raise Exception(f'Host {host_id} não existe na rede.')
+        
+    #     # Cria o qubit e adiciona à memória do host
+    #     qubit_id = self._count_qubit
+    #     qubit = Qubit(qubit_id, self._initial_qubits_fidelity)
+    #     self._network.hosts[host_id].add_qubit(qubit)
+    #     self._count_qubit += 1
+    #     self.logger.debug(f'Qubit {qubit_id} criado com fidelidade inicial {self._initial_qubits_fidelity} e adicionado à memória do Host {host_id}.')
+    
     def create_qubit(self, host_id: int):
         """
         Cria um qubit e adiciona à memória do host especificado.
@@ -57,37 +91,41 @@ class PhysicalLayer():
         """
         if host_id not in self._network.hosts:
             raise Exception(f'Host {host_id} não existe na rede.')
-        
+
         # Cria o qubit e adiciona à memória do host
         qubit_id = self._count_qubit
-        qubit = Qubit(qubit_id, self._initial_qubits_fidelity)
+        qubit = Qubit(qubit_id)  # Fidelidade inicial gerada internamente
         self._network.hosts[host_id].add_qubit(qubit)
         self._count_qubit += 1
-        self.logger.debug(f'Qubit {qubit_id} criado com fidelidade inicial {self._initial_qubits_fidelity} e adicionado à memória do Host {host_id}.')
-    
+        self.logger.debug(f'Qubit {qubit_id} criado com fidelidade inicial {qubit.get_initial_fidelity()} e adicionado à memória do Host {host_id}.')
+
     #Possível função genérica para entrelaçar inúmeros qubits. GHZ, W, etc.
     def entangle_n_qubits(self, qubits: list):
         pass
     
-    def create_epr_pair(self, qubit1: Qubit, qubit2: Qubit):
+
+    def create_epr_pair(self, fidelity: float = 1.0):
         """
         Cria um par de qubits entrelaçados.
         
         returns:
             Qubit, Qubit : Par de qubits entrelaçados.
         """
-        
-        # Verifica se os parâmetros são instâncias da classe Qubit
-        if not isinstance(qubit1, Qubit) or not isinstance(qubit2, Qubit):
-            raise ValueError("Os parâmetros devem ser instâncias da classe Qubit.")
-        
-        # Mede a fidelidade dos qubits e calcula a fidelidade inicial do par EPR
-        qubit1_fidelity = self.fidelity_measurement_only_one(qubit1)
-        qubit2_fidelity = self.fidelity_measurement_only_one(qubit2)
-        epr_inicial_fidelity = qubit1_fidelity * qubit2_fidelity
-        epr = Epr([qubit1, qubit2], epr_inicial_fidelity)
+        epr = Epr(self._count_epr, fidelity)
         return epr
-      
+
+    def add_epr_to_channel(self, epr: Epr, channel: tuple):
+        """
+        Adiciona um par EPR ao canal.
+
+        Args:
+            epr (Epr): Par EPR.
+            channel (tuple): Canal.
+        """
+        self._network.edges[channel]['eprs'].append(epr)
+        self.logger.debug(f'Par EPR {epr} adicionado ao canal {channel}.')
+
+
     def fidelity_measurement_only_one(self, qubit: Qubit):
         """
         Mede a fidelidade de um qubit.
@@ -99,21 +137,6 @@ class PhysicalLayer():
             float: Fidelidade do qubit.
         """
         fidelity = qubit.get_current_fidelity()
-        self.logger.log(f'A fidelidade do qubit {qubit} é {fidelity}')
-        return fidelity
-    
-    
-    def fidelity_measurement_only_one(self, qubit: Qubit):
-        """
-        Mede a fidelidade de um qubit.
-
-        Args:
-            qubit (Qubit): Qubit.
-
-        Returns:
-            float: Fidelidade do qubit.
-        """
-        fidelity = qubit.fidelity()
         self.logger.log(f'A fidelidade do qubit {qubit} é {fidelity}')
         return fidelity
     
@@ -132,7 +155,7 @@ class PhysicalLayer():
         self.logger.log(f'A fidelidade entre o qubit {qubit1} e o qubit {qubit2} é {fidelity}')
         return fidelity
     
-    def Entanglement_Creation_Heralding_Protocol(self, alice: Host, bob: Host):
+    def entanglement_creation_heralding_protocol(self, alice: Host, bob: Host):
         """ 
         Protocolo de criação de emaranhamento com sinalização.
         
@@ -142,18 +165,25 @@ class PhysicalLayer():
         # Alice e Bob criam um par EPR
         qubit1 = alice.get_last_qubit()
         qubit2 = bob.get_last_qubit()
-        self.create_epr_pair(qubit1, qubit2)
+        epr_fidelity = qubit1.get_current_fidelity() * qubit2.get_current_fidelity()
+        epr =  self.create_epr_pair(epr_fidelity)
     
         # Checa a fidelidade
         fidelity = self.fidelity_measurement(qubit1, qubit2)
         
+        alice_host_id = alice.host_id  # Acessa o ID do host diretamente
+        bob_host_id = bob.host_id      # Acessa o ID do host diretamente
+        
         # Pode dar errado tanto pela probabilidade, quanto pela fidelidade
-        if fidelity > 0.9:
-            self.logger.log('O protocolo de criação de emaranhamento foi bem sucedido.')
+        if fidelity >= 0.8:
+            self._network.edges[(alice_host_id, bob_host_id)]['eprs'].append(epr)
+            self.logger.log('O protocolo de criação de emaranhamento foi bem sucedido com a fidelidade necessária.')
             # Adicionar par EPR no canal
             return True
-        self.logger.log('O protocolo de criação de emaranhamento falhou.')
-        return False
+        elif fidelity < 0.8:
+            self.failed_eprs.append(epr)
+            self.logger.log('O protocolo de criação de emaranhamento foi bem sucedido, mas com fidelidade baixa.')
+            return False
 
     def echp_on_demand(self, alice_host_id: int, bob_host_id: int):
         """
@@ -179,7 +209,7 @@ class PhysicalLayer():
         echp_success_probability = prob_on_demand_epr_create * fidelity_qubit1 * fidelity_qubit2
             
         if uniform(0, 1) < echp_success_probability:
-            epr = self.create_epr_pair(qubit1, qubit2)
+            epr = self.create_epr_pair(fidelity_qubit1 * fidelity_qubit2)
             self._network.edges[alice_host_id, bob_host_id]['eprs'].append(epr)
             self.logger.log(f'A probabilidade de sucesso do ECHP é {echp_success_probability}')
             return True
@@ -214,10 +244,12 @@ class PhysicalLayer():
         echp_success_probability = prob_replay_epr_create * fidelity_qubit1 * fidelity_qubit2
         
         if uniform(0, 1) < echp_success_probability:
-            epr = self.create_epr_pair(qubit1, qubit2)
+            epr = self.create_epr_pair(fidelity_qubit1 * fidelity_qubit2)
             self._network.edges[alice_host_id, bob_host_id]['eprs'].append(epr)
             self.logger.log(f'A probabilidade de sucesso do ECHP é {echp_success_probability}')
             return True
         self.logger.log('A probabilidade de sucesso do ECHP falhou.')
         return False
-
+    
+    
+    
